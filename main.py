@@ -19,6 +19,7 @@ import jinja2
 import cgi
 import os
 import re
+import time
 
 from google.appengine.ext import db
 
@@ -39,47 +40,64 @@ class Handler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
+
 class BlogPost(db.Model):
     title = db.StringProperty(required = True)
     post_content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
 
-class MainPage(Handler):
-    def render_base(self, title="", post_content="", error=""):
-        blog_posts = db.GqlQuery("SELECT * FROM BlogPost ORDER BY created DESC")
 
-        self.render("base.html", title=title, post_content=post_content, error=error, blog_posts=blog_posts)
+class MainPage(Handler):
+    pass
+
+
+class BlogPage(Handler):
+    def render_base(self, title="", post_content=""):
+        blog_posts = db.GqlQuery("SELECT * FROM BlogPost ORDER BY created DESC LIMIT 5")
+        self.render("blog-page.html", title=title, post_content=post_content, blog_posts=blog_posts)
 
     def get(self):
         self.render_base()
+
+
+class NewPost(Handler):
+    def get(self):
+        self.render("new-post.html")
 
     def post(self):
         title = self.request.get("title")
         post_content = self.request.get("post_content")
 
         if title and post_content:
-            p = BlogPost(title=title, post_content=post_content)
-            p.put()
+            blogpost = BlogPost(title=title, post_content=post_content)
+            blogpost.put()
+            time.sleep(0.25)
 
-            self.redirect("/")
+            self.redirect("/blog/" + str(blogpost.key().id()))
         else:
             error = "You need both a title and post content."
-            self.render_base(title, post_content, error)
+            self.render("new-post.html", title=title, post_content=post_content, error=error)
 
-#class NewPost(Handler):
-#    def get(self):
-#        self.render("new-post.html")
+
+class ViewPostHandler(Handler):
+    def get(self, id):
+        blog_posts = BlogPost.get_by_id(int(id))
+        self.render("blog-posts.html", blog_posts=blog_posts)
+
+
+
+#        self.write(BlogPost.get_by_id(int(id)))
 #
-#    def post(self):
-#        title = self.request.get("title")
-#        post = self.request.get("post")
-#
-#    if title and post:
-#        self.write("Thanks!")
-#    else:
-#        error = "You need both a title and post content."
-#        self.render("base.html", error = error)
+#        if blogpost:
+#            self.render("blog-posts.html", title=title, post_content=post_content)
+#        else:
+#            self.write("Error 404: Page does not exist")
+
+
 
 app = webapp2.WSGIApplication([
-    ('/', MainPage)
+    ('/', MainPage),
+    ('/blog', BlogPage),
+    ('/newpost', NewPost),
+    webapp2.Route('/blog/<id:\d+>', ViewPostHandler)
 ], debug=True)

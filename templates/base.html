@@ -61,32 +61,14 @@
     <body style="margin: 0">
         <h1>Build-a-Blog</h1>
 
-        <form method="post">
-            <label>
-                <div>Title</div>
-                <input type="text" name="title" value="{{title}}">
-            </label>
+            <a href="/blog">Blog Posts</a> &nbsp; <a href="/newpost">New Post</a>
 
-            <label>
-                <div>Post Content</div>
-                <textarea name="post_content">{{post_content}}</textarea>
-            </label>
+            <hr>
+
 
             {% block content %}
             {% endblock %}
 
-            <div class="error">{{error}}</div>
 
-            <input type="submit">
-        </form>
-
-        <hr>
-
-        {% for post_content in blog_posts %}
-            <div class="post_content">
-                <div class="post-title">{{post_content.title}}</div>
-                <pre class="post-body">{{post_content.post_content}}</pre>
-            </div>
-        {% endfor %}
     </body>
 </html>
